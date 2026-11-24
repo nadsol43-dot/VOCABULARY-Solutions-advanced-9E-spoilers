@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English-Russian Flashcards</title>
+    <style>
+        :root {
+            --primary: #3498db;
+            --primary-dark: #2980b9;
+            --secondary: #2ecc71;
+            --secondary-dark: #27ae60;
+            --bg: #f0f4f8;
+            --text: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            color: var(--text);
+        }
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 28px;
+        }
+
+        /* Deck Selection Tabs */
+        .deck-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: #e2e8f0;
+            padding: 5px;
+            border-radius: 30px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .deck-tab {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            background: transparent;
+            color: #64748b;
+            transition: all 0.3s ease;
+        }
+
+        .deck-tab.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Flashcard Scene */
+        .scene {
+            width: 100%;
+            max-width: 450px;
+            height: 280px;
+            perspective: 1000px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 30px;
+            box-sizing: border-box;
+            font-size: 22px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .card-front {
+            background-color: white;
+            color: var(--text);
+            border: 3px solid var(--primary);
+        }
+
+        .card-back {
+            background-color: var(--primary);
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        .hint {
+            font-size: 14px;
+            position: absolute;
+            bottom: 20px;
+            opacity: 0.6;
+            font-weight: normal;
+        }
+
+        /* Navigation Controls */
+        .navigation {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .nav-btn {
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(46, 204, 113, 0.2);
+        }
+
+        .nav-btn:hover { background-color: var(--secondary-dark); }
+        .nav-btn:disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .shuffle-btn {
+            background-color: #9b59b6;
+            box-shadow: 0 4px 6px rgba(155, 89, 182, 0.2);
+        }
+        .shuffle-btn:hover { background-color: #8e44ad; }
+
+        .counter {
+            font-size: 15px;
+            color: #64748b;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 480px) {
+            .deck-selector { flex-direction: column; width: 100%; border-radius: 15px; }
+            .deck-tab { width: 100%; border-radius: 10px; }
+            .scene { height: 250px; }
+            .card-face { font-size: 18px; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Transcript Flashcards</h1>
+
+    <!-- Deck Selection -->
+    <div class="deck-selector">
+        <button class="deck-tab active" id="tab-en-ru" onclick="switchDeck('en-ru')">English ➔ Russian</button>
+        <button class="deck-tab" id="tab-ru-en" onclick="switchDeck('ru-en')">Russian ➔ English</button>
+    </div>
+
+    <!-- Flashcard -->
+    <div class="scene">
+        <div class="card" id="flashcard" onclick="flipCard()">
+            <div class="card-face card-front" id="frontText">
+                Loading...
+                <div class="hint">Click card to flip</div>
+            </div>
+            <div class="card-face card-back" id="backText">
+                <span id="backTextContent"></span>
+                <div class="hint">Click to flip back</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="navigation">
+        <button class="nav-btn" id="prevBtn" onclick="prevCard()">⬅️ Prev</button>
+        <button class="nav-btn shuffle-btn" onclick="shuffleCards()">🔀 Shuffle</button>
+        <button class="nav-btn" id="nextBtn" onclick="nextCard()">Next ➡️</button>
+    </div>
+
+    <div class="counter" id="counter">Card 1 / 25</div>
+
+    <script>
+        // The 25 extracted phrases with translations
+        const cardsData = [
+            { en: "been the victim of a spoiler", ru: "стал жертвой спойлера" },
+            { en: "happened to mention", ru: "случайно упомянул" },
+            { en: "Her immediate reaction was", ru: "Ее немедленной реакцией было" },
+            { en: "This came as quite a shock to me", ru: "Это стало для меня настоящим шоком" },
+            { en: "character was the last person in the saga I was expecting to come to an untimely end", ru: "этот персонаж был последним в саге, от кого я ожидал безвременной кончины" },
+            { en: "encountered", ru: "сталкивался / встречал" },
+            { en: "the film came out", ru: "фильм вышел" },
+            { en: "I was in no particular hurry to see it", ru: "я не особенно спешил его посмотреть" },
+            { en: "wait until all the hype had settled down", ru: "подождать, пока весь ажиотаж уляжется" },
+            { en: "see it in my own time", ru: "посмотреть это в удобное для меня время" },
+            { en: "revealing the dramatic twist at the end", ru: "раскрывая драматический поворот сюжета в конце" },
+            { en: "He probably hadn't intended to do any harm", ru: "Он, вероятно, не хотел причинить никакого вреда" },
+            { en: "ruined the film for me", ru: "испортил мне фильм" },
+            { en: "he took it for granted", ru: "он принимал это как должное" },
+            { en: "be so careful on social media", ru: "быть очень осторожным в социальных сетях" },
+            { en: "to come across a spoiler", ru: "наткнуться на спойлер" },
+            { en: "to give too much away", ru: "выдать слишком много / слишком много рассказать" },
+            { en: "there was a major plot twist", ru: "был крупный поворот сюжета" },
+            { en: "put their foot in it", ru: "сесть в лужу / сделать ляп" },
+            { en: "with a text mourning the death", ru: "с текстом, оплакивающим смерть" },
+            { en: "loads of complaints", ru: "множество жалоб" },
+            { en: "put a lot of pressure on", ru: "оказать большое давление на" },
+            { en: "people are bound to talk about", ru: "люди обязательно будут говорить о" },
+            { en: "take great pleasure in revealing", ru: "получать огромное удовольствие от раскрытия" },
+            { en: "spoiled my enjoyment", ru: "испортил мне удовольствие" }
+        ];
+
+        let currentDeck = 'en-ru'; // 'en-ru' or 'ru-en'
+        let currentIndex = 0;
+        let isShuffled = false;
+
+        const cardElement = document.getElementById('flashcard');
+        const frontTextElement = document.getElementById('frontText');
+        const backTextElement = document.getElementById('backTextContent');
+        const counterElement = document.getElementById('counter');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        
+        const tabEnRu = document.getElementById('tab-en-ru');
+        const tabRuEn = document.getElementById('tab-ru-en');
+
+        function renderCard() {
+            const currentCard = cardsData[currentIndex];
+            
+            // Determine which language goes on the front based on the deck
+            let frontStr = currentDeck === 'en-ru' ? currentCard.en : currentCard.ru;
+            let backStr = currentDeck === 'en-ru' ? currentCard.ru : currentCard.en;
+
+            frontTextElement.innerHTML = `${frontStr}<div class="hint">Click card to flip</div>`;
+            backTextElement.textContent = backStr;
+
+            // Reset flip state
+            cardElement.classList.remove('is-flipped');
+            
+            // Update counter and buttons
+            counterElement.textContent = `Card ${currentIndex + 1} / ${cardsData.length}`;
+            prevBtn.disabled = currentIndex === 0;
+            nextBtn.disabled = currentIndex === cardsData.length - 1;
+        }
+
+        function flipCard() {
+            cardElement.classList.toggle('is-flipped');
+        }
+
+        function nextCard() {
+            if (currentIndex < cardsData.length - 1) {
+                currentIndex++;
+                renderCard();
+            }
+        }
+
+        function prevCard() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                renderCard();
+            }
+        }
+
+        function switchDeck(deckName) {
+            if (currentDeck === deckName) return;
+            
+            currentDeck = deckName;
+            
+            // Update UI tabs
+            if (currentDeck === 'en-ru') {
+                tabEnRu.classList.add('active');
+                tabRuEn.classList.remove('active');
+            } else {
+                tabRuEn.classList.add('active');
+                tabEnRu.classList.remove('active');
+            }
+            
+            renderCard();
+        }
+
+        function shuffleCards() {
+            // Fisher-Yates shuffle
+            for (let i = cardsData.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cardsData[i], cardsData[j]] = [cardsData[j], cardsData[i]];
+            }
+            currentIndex = 0;
+            renderCard();
+        }
+
+        // Initialize
+        renderCard();
+    </script>
+</body>
+</html>
